@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Красная кнопка</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#e8ecf2; --panel:#f7f9fc; --line:#cfd6e0; --text:#1a1f29; --muted:#5b6575;
+  --red:#e5252a; --red-d:#9c1217; --red-l:#ff6a6d; --ok:#1f9d55; color-scheme:light;
+  font-family:"Rubik",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#12151b;--panel:#1b1f27;--line:#2c323d;--text:#eef1f6;--muted:#93a0b3;color-scheme:dark}
+}
+:root[data-theme="dark"]{--bg:#12151b;--panel:#1b1f27;--line:#2c323d;--text:#eef1f6;--muted:#93a0b3;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);min-height:100vh}
+main{max-width:1000px;margin:0 auto;padding:24px 16px 40px;display:grid;gap:24px;grid-template-columns:1fr}
+@media(min-width:820px){main{grid-template-columns:minmax(0,1fr) 380px;align-items:start;padding-top:40px}}
+.stage{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
+h1{font-size:1rem;font-weight:500;color:var(--muted);margin:0}
+.count{font-size:clamp(2.6rem,9vw,4.4rem);font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.02em;overflow-wrap:anywhere}
+.rates{color:var(--muted);font-size:.95rem;min-height:1.4em}
+.btn-wrap{position:relative;margin:28px 0 12px;width:min(78vw,280px);aspect-ratio:1}
+#big{
+  all:unset;box-sizing:border-box;cursor:pointer;display:block;width:100%;height:100%;border-radius:50%;
+  background:radial-gradient(circle at 35% 28%,var(--red-l),var(--red) 45%,#c21a20 100%);
+  box-shadow:0 14px 0 var(--red-d),0 24px 40px rgba(156,18,23,.35),inset 0 -8px 18px rgba(0,0,0,.18),inset 0 8px 14px rgba(255,255,255,.25);
+  transition:transform .06s,box-shadow .06s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;
+}
+#big:active,#big.press{transform:translateY(10px);box-shadow:0 4px 0 var(--red-d),0 10px 22px rgba(156,18,23,.35),inset 0 -8px 18px rgba(0,0,0,.18),inset 0 8px 14px rgba(255,255,255,.25)}
+#big:focus-visible{outline:4px solid var(--text);outline-offset:8px}
+.pop{position:absolute;pointer-events:none;font-weight:800;font-size:1.5rem;color:var(--red);text-shadow:0 1px 0 var(--bg);animation:up .8s ease-out forwards;transform:translate(-50%,-50%)}
+@keyframes up{to{transform:translate(-50%,-190%);opacity:0}}
+@media(prefers-reduced-motion:reduce){.pop{animation:none;opacity:0}#big{transition:none}}
+.shop{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.shop h2{margin:0 0 12px;font-size:1.15rem}
+.list{display:grid;gap:8px}
+.up{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);width:100%}
+.up:focus-visible{outline:3px solid var(--text);outline-offset:2px}
+.up[aria-disabled="true"]{opacity:.5;cursor:not-allowed}
+.up:not([aria-disabled="true"]):hover{border-color:var(--red)}
+.up .name{font-weight:700}
+.up .own{font-weight:700;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.up .desc{color:var(--muted);font-size:.85rem}
+.up .cost{font-weight:700;color:var(--red);text-align:right;font-size:.95rem;font-variant-numeric:tabular-nums}
+.up[aria-disabled="true"] .cost{color:var(--muted)}
+.foot{margin-top:14px;display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:.85rem;gap:8px}
+.foot button{all:unset;cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:8px}
+.foot button:focus-visible{outline:3px solid var(--text)}
+</style>
+</head>
+<body>
+<main>
+  <section class="stage" aria-label="Кнопка">
+    <h1>Нажимай на кнопку</h1>
+    <div class="count" id="count" aria-live="off">0</div>
+    <div class="rates" id="rates"></div>
+    <div class="btn-wrap" id="wrap"><button id="big" aria-label="Красная кнопка. Нажми, чтобы получить очки"></button></div>
+  </section>
+  <section class="shop" aria-label="Магазин улучшений">
+    <h2>Магазин улучшений</h2>
+    <div class="list" id="list"></div>
+    <div class="foot"><span id="total">Всего кликов: 0</span><button id="reset" type="button">Сбросить</button></div>
+  </section>
+</main>
+<script>
+(function(){
+  var KEY="red-button-clicker-v1";
+  var U=[
+    {id:"finger",name:"Крепкий палец",desc:"+1 за клик",t:"click",v:1,b:15,g:1.15},
+    {id:"intern",name:"Стажёр",desc:"+1 очко в секунду",t:"auto",v:1,b:50,g:1.15},
+    {id:"mouse",name:"Игровая мышь",desc:"+5 за клик",t:"click",v:5,b:150,g:1.15},
+    {id:"auto",name:"Автокликер",desc:"+5 очков в секунду",t:"auto",v:5,b:300,g:1.15},
+    {id:"double",name:"Двойной клик",desc:"+10 за клик",t:"click",v:10,b:1200,g:1.16},
+    {id:"farm",name:"Кликерная ферма",desc:"+30 очков в секунду",t:"auto",v:30,b:2500,g:1.15},
+    {id:"robot",name:"Робот-кликер",desc:"+100 очков в секунду",t:"auto",v:100,b:10000,g:1.15},
+    {id:"gold",name:"Золотая кнопка",desc:"+25% ко всему доходу",t:"mult",v:.25,b:20000,g:2.2},
+    {id:"quant",name:"Квантовый палец",desc:"+100 за клик",t:"click",v:100,b:50000,g:1.17},
+    {id:"factory",name:"Кликерная фабрика",desc:"+500 очков в секунду",t:"auto",v:500,b:100000,g:1.15}
+  ];
+  var S={n:0,total:0,own:{}};
+  U.forEach(function(u){S.own[u.id]=0});
+  try{
+    var raw=localStorage.getItem(KEY);
+    if(raw){var d=JSON.parse(raw);S.n=+d.n||0;S.total=+d.total||0;U.forEach(function(u){S.own[u.id]=(d.own&&+d.own[u.id])||0})}
+  }catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+  function fmt(n){
+    if(n<1000)return String(Math.floor(n));
+    var s=[" тыс."," млн"," млрд"," трлн"," квадр."],i=-1;
+    while(n>=1000&&i<s.length-1){n/=1000;i++}
+    return (Math.floor(n*100)/100).toLocaleString("ru-RU")+s[i];
+  }
+  function mult(){var m=1;U.forEach(function(u){if(u.t==="mult")m+=u.v*S.own[u.id]});return m}
+  function perClick(){var c=1;U.forEach(function(u){if(u.t==="click")c+=u.v*S.own[u.id]});return c*mult()}
+  function perSec(){var a=0;U.forEach(function(u){if(u.t==="auto")a+=u.v*S.own[u.id]});return a*mult()}
+  function cost(u){return Math.ceil(u.b*Math.pow(u.g,S.own[u.id]))}
+
+  var $c=document.getElementById("count"),$r=document.getElementById("rates"),$l=document.getElementById("list"),
+      $t=document.getElementById("total"),$b=document.getElementById("big"),$w=document.getElementById("wrap");
+  var els={};
+  U.forEach(function(u){
+    var b=document.createElement("button");
+    b.type="button";b.className="up";
+    b.innerHTML='<span class="name"></span><span class="own"></span><span class="desc"></span><span class="cost"></span>';
+    b.querySelector(".name").textContent=u.name;
+    b.querySelector(".desc").textContent=u.desc;
+    b.addEventListener("click",function(){buy(u)});
+    $l.appendChild(b);els[u.id]=b;
+  });
+  function buy(u){
+    var c=cost(u);
+    if(S.n<c)return;
+    S.n-=c;S.own[u.id]++;save();render();
+  }
+  function render(){
+    $c.textContent=fmt(S.n);
+    $r.textContent="+"+fmt(perClick())+" за клик · +"+fmt(perSec())+" в секунду";
+    $t.textContent="Всего кликов: "+S.total.toLocaleString("ru-RU");
+    U.forEach(function(u){
+      var b=els[u.id],c=cost(u);
+      b.setAttribute("aria-disabled",S.n<c?"true":"false");
+      b.querySelector(".own").textContent="×"+S.own[u.id];
+      b.querySelector(".cost").textContent=fmt(c);
+    });
+  }
+  function click(e){
+    var p=perClick();
+    S.n+=p;S.total++;
+    var r=$w.getBoundingClientRect(),x,y;
+    if(e&&e.clientX){x=e.clientX-r.left;y=e.clientY-r.top}else{x=r.width/2;y=r.height/2}
+    var s=document.createElement("span");
+    s.className="pop";s.textContent="+"+fmt(p);
+    s.style.left=x+"px";s.style.top=y+"px";
+    $w.appendChild(s);
+    setTimeout(function(){s.remove()},800);
+    render();
+  }
+  $b.addEventListener("click",click);
+  var last=Date.now();
+  setInterval(function(){
+    var now=Date.now(),dt=(now-last)/1000;last=now;
+    var a=perSec();
+    if(a>0){S.n+=a*dt;render()}
+  },100);
+  setInterval(save,5000);
+  window.addEventListener("pagehide",save);
+  document.getElementById("reset").addEventListener("click",function(){
+    if(!confirm("Сбросить весь прогресс?"))return;
+    S.n=0;S.total=0;U.forEach(function(u){S.own[u.id]=0});save();render();
+  });
+  render();
+})();
+</script>
+</body>
+</html>
